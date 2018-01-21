@@ -51,13 +51,15 @@ public class Assignment1 {
         boolean lastOut = false;
         double lastOutTime = 0;
 
-        double startTime = 0, endTime = 600;
+        double startTime = 0, endTime = 600, totalDelay = 0, bs = 20;
 
-        int packetLoss = 0, queueLength = 100, sourceId = 501;
+        int packetLoss = 0, queueLength = 25, sourceId = 501, currentQueueSize = 0,
+                packetLeftQueue = 0, packetEnteredQueue = 0, packetReachedSink = 0,
+                packetReachedQueue = 0;
 
         HashMap<Integer, Link> linkHashMap = new HashMap<>();
 
-        linkHashMap.put(11, new Link(11, 10));
+        linkHashMap.put(11, new Link(11, bs));
         linkHashMap.put(12, new Link(12, bandwidth));
 
         HashMap<Integer, Switch> switchHashMap = new HashMap<>();
@@ -69,33 +71,12 @@ public class Assignment1 {
 
         HashMap<Integer, Source> sourceHashMap = new HashMap<>();
 
-
         int packet_Id = 123;
 
         HashMap<Integer, Packet> packetHashMap = new HashMap<>();
 
 
-//        packetHashMap.put(packet_Id, new Packet(packet_Id++, 2, t2, 502, 0));
-//        packetHashMap.put(packet_Id, new Packet(packet_Id++, 2, t3, 503, 0));
-//        packetHashMap.put(packet_Id, new Packet(packet_Id++, 2, t4, 504, 0));
-
-//        packetHashMap.put(packet_Id, new Packet(packet_Id++, 100, t1, 501, 0));
-//        packetHashMap.put(packet_Id, new Packet(packet_Id++, 100, t2, 502, 0));
-//        packetHashMap.put(packet_Id, new Packet(packet_Id++, 100, t3, 503, 0));
-//        packetHashMap.put(packet_Id, new Packet(packet_Id++, 100, t4, 504, 0));
-
         PriorityQueue<Event> eventPriorityQueue = new PriorityQueue<>();
-
-
-//        eventPriorityQueue.add(new Event(0, t2, 124));
-//        eventPriorityQueue.add(new Event(0, t3, 125));
-//        eventPriorityQueue.add(new Event(0, t4, 126));
-
-//        for (Event e : eventPriorityQueue) {
-//            System.out.println("Type = " + e.getType() + " timestamp = " + e.getTimestamp() + " packetId = " + e.getPacketId());
-//        }
-
-//        System.out.println(packetHashMap.toString());
 
 
         for (int i = 0; i < sourceNum; i++) {
@@ -108,15 +89,12 @@ public class Assignment1 {
         }
 
 
-        while (!eventPriorityQueue.isEmpty() && eventPriorityQueue.peek().getTimestamp() < endTime) {
+        outer:
+        while (true) {
             Event event = eventPriorityQueue.poll();
             Packet packet = packetHashMap.get(event.getPacketId());
             Source source = sourceHashMap.get(packet.getSourceId());
 
-//            System.out.println("\n\n\nWhile starts here ------->");
-//            System.out.println(event.getPacketId() + " " + event.toString());
-//            System.out.println("Event Priority Queue  -----> " + eventPriorityQueue.size());
-//            System.out.println(eventPriorityQueue.toString());
 
             switch (event.getType()) {
 
@@ -126,12 +104,7 @@ public class Assignment1 {
                     double lambda = source.getPacketGenerationRate();
 
                     // Creating new packet
-//                    packetHashMap.put(packet_Id,
-//                            new Packet(packet_Id,
-//                                    100,
-//                                    packet.getCreationTimestamp() + lambda,
-//                                    packet.getSourceId(),
-//                                    0));
+
                     packetHashMap.put(packet_Id,
                             source.generatePacket(packet_Id,
                                     packet.getPacketLength(),
@@ -144,80 +117,47 @@ public class Assignment1 {
 
                     // Creating event E1
 
-                    PriorityQueue<Event> queue = switchHashMap.get(source.getSwitchId()).getEventPriorityQueue();
-
-//                    System.out.println("Queue size = " +queue.size());
-
-                    if (sizeLimit && queue.size() >= queueLength) {
-                        packetLoss++;
-                        break;
-                    }
-
-
-                    double bs = linkHashMap.get(source.getLinkId()).getBandwidth();
-
-                    double l_bs = ((double) packet.getPacketLength()) / bs;
+                    double l_bs = ((double) packet.getPacketLength())/linkHashMap.get(source.getLinkId()).getBandwidth();
 
                     eventPriorityQueue.add(
                             new Event(1, packet.getCreationTimestamp() + l_bs, packet.getPacketID())
                     );
 
-
-                    queue.add(new Event(1, packet.getCreationTimestamp() + l_bs, packet.getPacketID()));
                     break;
                 }
 
                 case 1: {
 //                    System.out.println("case 1");
-                    long n_l = 0;
-                    PriorityQueue<Event> queue = switchHashMap.get(source.getSwitchId()).getEventPriorityQueue();
-//                    System.out.println("event small queue ---> ");
-//                    System.out.println(queue.toString());
 
+                    packetReachedQueue++;
 
-                    for (Event event1 : queue) {
-                        if (event1.getTimestamp() < event.getTimestamp())
-                            n_l += packetHashMap.get(event1.getPacketId()).getPacketLength();
+                    if (sizeLimit && currentQueueSize >= queueLength) {
+                        packetLoss++;
+                        break;
                     }
+
+                    long n_l = currentQueueSize * packetHashMap.get(event.getPacketId()).getPacketLength();
+
                     double bss = linkHashMap.get(switchHashMap.get(source.getSwitchId()).getLinkId()).getBandwidth();
-                    double n_l_bss = ((double) n_l )/ bss;
+                    double n_l_bss = ((double) n_l) / bss;
 
                     double tx = 0;
 
                     if (lastOut) {
                         double tmp = (double) packetHashMap.get(event.getPacketId()).getPacketLength() / bss;
                         tx = tmp - (event.getTimestamp() - lastOutTime);
-                        if (tx < 0){
+                        if (tx < 0) {
                             tx = 0;
                         }
 
                     }
 
-//                    for (Event event1 : eventPriorityQueue) {
-//                        if (event1.getType() == 2) {
-//                            double tmp = packetHashMap.get(event1.getPacketId()).getPacketLength() / bss;
-//                            double tmp2 = tmp - (event.getTimestamp() - event1.getTimestamp());
-//                            if (tmp2 < tx || tx == 0) {
-//                                tx = tmp2;
-////                                System.out.println("***************** Tx = " + tx);
-////                                System.out.println("tmp = " + tmp + " event = " + event.getTimestamp() + " event1 = " + event1.getTimestamp() + "tx = " + tx);
-//                            }
-//                        } else if (event1.getType() == 3) {
-////                            double tmp = packetHashMap.get(event1.getPacketId()).getPacketLength() / bss;
-//                            double tmp2 = (event1.getTimestamp() - event.getTimestamp());
-//                            if (tmp2 < tx || tx == 0) {
-//                                tx = tmp2;
-////                                System.out.println("**************333 Tx = " + tx);
-////                                System.out.println(" event = " + event.getTimestamp() + " event1 = " + event1.getTimestamp() + "tx = " + tx);
-//                            }
-//                        }
-//                    }
-
-//                    System.out.println("Final tx = " + tx + " n_l_bss = " + n_l_bss);
-
                     eventPriorityQueue.add(
                             new Event(2, event.getTimestamp() + n_l_bss + tx, packet.getPacketID())
                     );
+                    totalDelay +=  n_l_bss + tx;
+                    currentQueueSize++;
+                    packetEnteredQueue++;
                     break;
 
                 }
@@ -229,23 +169,24 @@ public class Assignment1 {
 
                     packet.setDeletiontimestamp(event.getTimestamp() + l_bss);
 
-                    PriorityQueue<Event> queue = switchHashMap.get(source.getSwitchId()).getEventPriorityQueue();
-
-                    queue.poll();
-
+                    currentQueueSize--;
+                    packetLeftQueue++;
                     lastOut = true;
                     lastOutTime = event.getTimestamp();
 
                     eventPriorityQueue.add(
                             new Event(3, event.getTimestamp() + l_bss, packet.getPacketID())
                     );
-
                     break;
 
                 }
 
                 case 3: {
                     // TODO: 1/20/18
+                    packetReachedSink++;
+
+                    if (packetReachedSink == 1000)
+                        break outer;
                     break;
                 }
 
@@ -255,88 +196,37 @@ public class Assignment1 {
                 }
             }
 
-//            System.out.println("Just before while ends ------->");
-//            System.out.println("Event Priority Queue  -----> " + eventPriorityQueue.size());
-//            System.out.println(eventPriorityQueue.toString());
         }
 
-//        System.out.println("Packet Hash Map ----->");
-//        System.out.println(packetHashMap.toString());
-
-        double totalDelay = 0;
-        int count = 0, generated = 0;
-
-        for (Object o : packetHashMap.entrySet()) {
-            HashMap.Entry pair = (Map.Entry) o;
-            Packet packet = (Packet) pair.getValue();
-            if (packet.getDeletiontimestamp() != 0 && packet.getDeletiontimestamp() < endTime) {
-                totalDelay += (packet.getDeletiontimestamp() - packet.getCreationTimestamp());
-                count++;
-//                System.out.println(packet.toString());
-            }
-
-            if (packet.getCreationTimestamp() < endTime) {
-                generated++;
-            }
-
-//            it.remove(); // avoids a ConcurrentModificationException
-        }
+        double averageDelay = (totalDelay/packetEnteredQueue);
+        totalDelay += packetLength*(1.0/bs +1.0/bandwidth);
+//        int count = 0;
 
 
-//        System.out.println(packetHashMap.toString());
-//
-//        System.out.println("Event Priority Queue ----->");
-//        System.out.println(eventPriorityQueue.toString());
-        if (count > 0) {
+        String data = "";
+        if (sizeLimit)
+            data = ((double)packetLoss / packetReachedQueue) + " " + (sourceNum * 0.5 * packetLength / bandwidth);
+        else
+            data = averageDelay + " " + (sourceNum * 0.5 * packetLength / bandwidth);
 
-            double tmp = ((double)packetLoss / generated);
-//            System.out.println("count = "+count+" packetloss = "+packetLoss+" generated = "+generated+ " tmp = "+tmp+" f = " +(double)(packetLoss/generated));
+//        System.out.println(averageDelay + " " + totalDelay +" " + packetEnteredQueue + " " +packetReachedQueue + " " + (sourceNum * 0.5 * packetLength / bandwidth));
 
-            String data = "";
-            if (sizeLimit)
-                data = tmp + " " + (sourceNum * 0.5 * packetLength / bandwidth);
-            else
-                data = (totalDelay / ((double)count)) + " " + (sourceNum * 0.5 * packetLength / bandwidth);
+        String filename = "";
+        if (sizeLimit)
+            filename = "graph2.txt";
+        else
+            filename = "graph1.txt";
 
-//            System.out.println("Average delay = " + (double) (totalDelay / count) + " utilization factor = " + (double) (4 * 0.5 * 2 / bandwidth));
-
-//            OutputStream os = null;
-//            try {
-//                os = new FileOutputStream(new File("graph1.txt"));
-//                os.write(data.getBytes(), 0, data.length());
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            }finally{
-//                try {
-//                    os.close();
-//                } catch (IOException e) {
-//                    e.printStackTrace();
-//                }
-//            }
-
-            String filename = "";
-
-            if (sizeLimit)
-                filename = "graph2.txt";
-            else
-                filename = "graph1.txt";
-
-
-            try (FileWriter fw = new FileWriter(filename, true);
-                 BufferedWriter bw = new BufferedWriter(fw);
-                 PrintWriter out = new PrintWriter(bw)) {
-                out.println(data);
-                //more code
+        try (FileWriter fw = new FileWriter(filename, true);
+             BufferedWriter bw = new BufferedWriter(fw);
+             PrintWriter out = new PrintWriter(bw)) {
+            out.println(data);
+            //more code
 //                out.println("more text");
-                //more code
-            } catch (IOException e) {
-                //exception handling left as an exercise for the reader
-            }
-
-
+            //more code
+        } catch (IOException e) {
+            //exception handling left as an exercise for the reader
         }
-
-//        System.out.println("Done");
 
     }
 }
