@@ -92,6 +92,12 @@ public class Assignment2 {
         }
 
 
+        try {
+            Process p = Runtime.getRuntime().exec("python3 Assignment2.py");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
     }
 
 
@@ -269,32 +275,6 @@ public class Assignment2 {
             return averageDelay;
         else
             return averageQueueSize;
-
-
-//        String data = "";
-//        if (sizeLimit)
-//            data = ((double) packetLoss / packetReachedQueue) + " " + (sourceNum * 0.5 * packetLength / bssT);
-//        else
-//            data = averageDelay + " " + (sourceNum * 0.5 * packetLength / bssT);
-//
-////        System.out.println(averageDelay + " " + totalDelay +" " + packetEnteredQueue + " " +packetReachedQueue + " " + (sourceNum * 0.5 * packetLength / bandwidth));
-//
-//        String filename = "";
-//        if (sizeLimit)
-//            filename = "graph2.txt";
-//        else
-//            filename = "graph1.txt";
-//
-//        try (FileWriter fw = new FileWriter(filename, true);
-//             BufferedWriter bw = new BufferedWriter(fw);
-//             PrintWriter out = new PrintWriter(bw)) {
-//            out.println(data);
-//            //more code
-////                out.println("more text");
-//            //more code
-//        } catch (IOException e) {
-//            //exception handling left as an exercise for the reader
-//        }
 
     }
 
