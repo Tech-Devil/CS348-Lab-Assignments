@@ -1,0 +1,6 @@
+set terminal postscript color
+set output "ans2.ps" 
+set xlabel "Utilization factor"
+set ylabel "Average delay"
+plot "graph2.txt" using 2:1 with lines
+quit
