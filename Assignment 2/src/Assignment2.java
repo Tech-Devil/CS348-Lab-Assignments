@@ -23,24 +23,27 @@ public class Assignment2 {
         int packetLength = sc.nextInt();
 
         try {
-            FileWriter fw = new FileWriter("graph1.txt", false);
-            FileWriter fw2 = new FileWriter("graph2.txt", false);
+            new FileWriter("graph1.txt", false);
+            new FileWriter("graph2.txt", false);
+            new FileWriter("graph3.txt", false);
+            new FileWriter("graph4.txt", false);
         } catch (IOException e) {
             e.printStackTrace();
         }
 
+        double tmp[] = new double[sourceNum];
         for (double i = 0.1; i < 5; i += 0.05) {
 
             double sumDelay = 0, sumQueueSize = 0;
 
-            for (int j = 0; j < 50; j++) {
+            for (int j = 0; j < 100; j++) {
 
                 for (int k = 0; k < sourceNum; k++) {
                     lambdas[k] = i;
                 }
 
-                sumDelay += calc(sourceNum, lambdas, packetLength, false, false);
-                sumQueueSize += calc(sourceNum, lambdas, packetLength, false, false);
+                sumDelay += calc(sourceNum, lambdas, packetLength, true, false, false, tmp, tmp);
+                sumQueueSize += calc(sourceNum, lambdas, packetLength, false, false, false, tmp, tmp);
 
             }
 
@@ -50,11 +53,8 @@ public class Assignment2 {
                  BufferedWriter bw = new BufferedWriter(fw);
                  PrintWriter out = new PrintWriter(bw)) {
                 out.println(data1);
-                //more code
-//                out.println("more text");
-                //more code
             } catch (IOException e) {
-                //exception handling left as an exercise for the reader
+                e.printStackTrace();
             }
 
             String data2 = (sumQueueSize / 50) + " " + i;
@@ -63,37 +63,66 @@ public class Assignment2 {
                  BufferedWriter bw = new BufferedWriter(fw);
                  PrintWriter out = new PrintWriter(bw)) {
                 out.println(data2);
-                //more code
-//                out.println("more text");
-                //more code
             } catch (IOException e) {
-                //exception handling left as an exercise for the reader
+                e.printStackTrace();
             }
 
         }
 
 
+        for (int i = 0; i < 50; i++) {
+            for (int j = 0; j < sourceNum; j++) {
+                lambdas[j] = 0.5 + j * 0.1;
+            }
+            double avgDelaySources[] = new double[sourceNum];
+            double avgPacketDrop[] = new double[sourceNum];
+            calc(sourceNum, lambdas, packetLength, false, true, false, avgDelaySources, avgPacketDrop);
+            for (int j = 0; j < sourceNum; j++) {
+                lambdas[j] = 0.1 + j * 2;
+            }
+            calc(sourceNum, lambdas, packetLength, false, true, true, avgDelaySources, avgPacketDrop);
+
+            StringBuilder data = new StringBuilder();
+
+            for (int k = 0; k < sourceNum; k++) {
+                data.append(avgDelaySources[k]).append(" ");
+            }
+
+            try (FileWriter fw = new FileWriter("graph3.txt", true);
+                 BufferedWriter bw = new BufferedWriter(fw);
+                 PrintWriter out = new PrintWriter(bw)) {
+                out.println(data);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            StringBuilder data2 = new StringBuilder();
+
+            for (int k = 0; k < sourceNum; k++) {
+                data2.append(avgPacketDrop[k]).append(" ");
+            }
+
+            try (FileWriter fw = new FileWriter("graph4.txt", true);
+                 BufferedWriter bw = new BufferedWriter(fw);
+                 PrintWriter out = new PrintWriter(bw)) {
+                out.println(data2);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
 
 
-//        for (float i = 5; i < 1000; i += 0.1) {
-//            calc(i, sourceNum, packetLength, true, false);
-//        }
-
-
-//        for (float i = 5; i < 1000; i += 0.1) {
-//            calc(i, sourceNum, packetLength, true);
-//        }
-
-        String[] cmdScript = new String[]{"/bin/bash", "gnuplot.sh"};
-        try {
-            Runtime.getRuntime().exec(cmdScript);
-        } catch (IOException e) {
-            e.printStackTrace();
         }
 
+//        String[] cmdScript = new String[]{"/bin/bash", "gnuplot.sh"};
+//        try {
+//            Runtime.getRuntime().exec(cmdScript);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+
 
         try {
-            Process p = Runtime.getRuntime().exec("python3 Assignment2.py");
+            Runtime.getRuntime().exec("python3 Assignment2.py");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -101,15 +130,20 @@ public class Assignment2 {
     }
 
 
-    private static double calc(int sourceNum, double lambdas[], int packetLength, boolean delay, boolean diffLambda) {
+    private static double calc(int sourceNum, double lambdas[], int packetLength,
+                               boolean calcDelay, boolean diffLambda, boolean pktLoss,
+                               double avgDelaySources[], double avgPacketDrop[]) {
 
         boolean lastOut = false;
         double lastOutTime = 0;
 
-        double startTime = 0, endTime = 600, totalDelay = 0, bs = 20, bssT = 100;
+        double totalDelay = 0, bs = 20, bssT = 100;
 
-        int sourceId = 501, currentQueueSize = 0, packetLeftQueue = 0,
-                packetEnteredQueue = 0, packetReachedSink = 0, packetReachedQueue = 0, sumQueueSize = 0;
+        double qEntered[] = new double[sourceNum];
+        double qReached[] = new double[sourceNum];
+
+        int sourceId = 0, currentQueueSize = 0, queueLength = 25,
+                packetEnteredQueue = 0, packetReachedSink = 0, sumQueueSize = 0;
 
         HashMap<Integer, Link> linkHashMap = new HashMap<>();
 
@@ -160,8 +194,6 @@ public class Assignment2 {
             switch (event.getType()) {
 
                 case 0: {
-
-//                    System.out.println("case 0");
                     double random = Math.random();
 
                     if (random == 1)
@@ -169,7 +201,6 @@ public class Assignment2 {
                     double t = -Math.log(1 - random) / source.getPacketGenerationRate();
 
                     // Creating new packet
-
                     packetHashMap.put(packet_Id,
                             source.generatePacket(packet_Id,
                                     packet.getPacketLength(),
@@ -181,7 +212,6 @@ public class Assignment2 {
                     );
 
                     // Creating event E1
-
                     double l_bs = ((double) packet.getPacketLength()) / linkHashMap.get(source.getLinkId()).getBandwidth();
 
                     eventPriorityQueue.add(
@@ -192,15 +222,13 @@ public class Assignment2 {
                 }
 
                 case 1: {
-//                    System.out.println("case 1");
-
-                    packetReachedQueue++;
+                    qReached[source.getSourceId()]++;
                     sumQueueSize += currentQueueSize;
 
-//                    if (sizeLimit && currentQueueSize >= queueLength) {
-//                        packetLoss++;
-//                        break;
-//                    }
+                    if (pktLoss && currentQueueSize >= queueLength) {
+                        avgPacketDrop[source.getSourceId()] += 1;
+                        break;
+                    }
 
                     long n_l = currentQueueSize * packetHashMap.get(event.getPacketId()).getPacketLength();
 
@@ -221,7 +249,12 @@ public class Assignment2 {
                     eventPriorityQueue.add(
                             new Event(2, event.getTimestamp() + n_l_bss + tx, packet.getPacketID())
                     );
-                    totalDelay += n_l_bss + tx;
+
+                    if (diffLambda && !pktLoss) {
+                        avgDelaySources[source.getSourceId()] += n_l_bss + tx;
+                        qEntered[source.getSourceId()]++;
+                    } else
+                        totalDelay += n_l_bss + tx;
                     currentQueueSize++;
                     packetEnteredQueue++;
                     break;
@@ -229,14 +262,12 @@ public class Assignment2 {
                 }
 
                 case 2: {
-//                    System.out.println("case 2");
                     double bss = linkHashMap.get(switchHashMap.get(source.getSwitchId()).getLinkId()).getBandwidth();
                     double l_bss = (double) packetHashMap.get(event.getPacketId()).getPacketLength() / bss;
 
                     packet.setDeletiontimestamp(event.getTimestamp() + l_bss);
 
                     currentQueueSize--;
-                    packetLeftQueue++;
                     lastOut = true;
                     lastOutTime = event.getTimestamp();
 
@@ -248,7 +279,6 @@ public class Assignment2 {
                 }
 
                 case 3: {
-                    // TODO: 1/20/18
                     packetReachedSink++;
 
                     if (packetReachedSink == 1000)
@@ -269,12 +299,23 @@ public class Assignment2 {
 
         double averageQueueSize = (sumQueueSize / packetEnteredQueue);
 
-//        int count = 0;
+        if (diffLambda && pktLoss) {
+            for (int i = 0; i < sourceNum; i++) {
+                avgPacketDrop[i] = (avgPacketDrop[i] / qReached[i]);
+            }
+        } else if (diffLambda && !pktLoss) {
+            for (int i = 0; i < sourceNum; i++) {
+                avgDelaySources[i] = (avgDelaySources[i] / qEntered[i]);
+                avgDelaySources[i] += packetLength * (1.0 / bs + 1.0 / bssT);
+            }
+        }
 
-        if (delay)
+        if (calcDelay && !diffLambda)
             return averageDelay;
-        else
+        else if (!calcDelay && !diffLambda)
             return averageQueueSize;
+        else
+            return 0;
 
     }
 

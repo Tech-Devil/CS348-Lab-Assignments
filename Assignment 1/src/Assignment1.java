@@ -3,7 +3,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Scanner;
 import java.util.concurrent.ThreadLocalRandom;
@@ -21,8 +20,8 @@ public class Assignment1 {
         int packetLength = sc.nextInt();
 
         try {
-            FileWriter fw = new FileWriter("graph1.txt", false);
-            FileWriter fw2 = new FileWriter("graph2.txt", false);
+            new FileWriter("graph1.txt", false);
+            new FileWriter("graph2.txt", false);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -36,9 +35,16 @@ public class Assignment1 {
             calc(i, sourceNum, packetLength, true);
         }
 
-        String[] cmdScript = new String[]{"/bin/bash", "gnuplot.sh"};
+//        String[] cmdScript = new String[]{"/bin/bash", "gnuplot.sh"};
+//        try {
+//            Runtime.getRuntime().exec(cmdScript);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+
+
         try {
-            Runtime.getRuntime().exec(cmdScript);
+            Runtime.getRuntime().exec("python3 Assignment1.py");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -51,11 +57,10 @@ public class Assignment1 {
         boolean lastOut = false;
         double lastOutTime = 0;
 
-        double startTime = 0, endTime = 600, totalDelay = 0, bs = 20;
+        double totalDelay = 0, bs = 20;
 
         int packetLoss = 0, queueLength = 25, sourceId = 501, currentQueueSize = 0,
-                packetLeftQueue = 0, packetEnteredQueue = 0, packetReachedSink = 0,
-                packetReachedQueue = 0;
+                packetEnteredQueue = 0, packetReachedSink = 0, packetReachedQueue = 0;
 
         HashMap<Integer, Link> linkHashMap = new HashMap<>();
 
@@ -99,12 +104,9 @@ public class Assignment1 {
             switch (event.getType()) {
 
                 case 0: {
-
-//                    System.out.println("case 0");
                     double lambda = source.getPacketGenerationRate();
 
                     // Creating new packet
-
                     packetHashMap.put(packet_Id,
                             source.generatePacket(packet_Id,
                                     packet.getPacketLength(),
@@ -116,8 +118,7 @@ public class Assignment1 {
                     );
 
                     // Creating event E1
-
-                    double l_bs = ((double) packet.getPacketLength())/linkHashMap.get(source.getLinkId()).getBandwidth();
+                    double l_bs = ((double) packet.getPacketLength()) / linkHashMap.get(source.getLinkId()).getBandwidth();
 
                     eventPriorityQueue.add(
                             new Event(1, packet.getCreationTimestamp() + l_bs, packet.getPacketID())
@@ -127,8 +128,6 @@ public class Assignment1 {
                 }
 
                 case 1: {
-//                    System.out.println("case 1");
-
                     packetReachedQueue++;
 
                     if (sizeLimit && currentQueueSize >= queueLength) {
@@ -155,7 +154,7 @@ public class Assignment1 {
                     eventPriorityQueue.add(
                             new Event(2, event.getTimestamp() + n_l_bss + tx, packet.getPacketID())
                     );
-                    totalDelay +=  n_l_bss + tx;
+                    totalDelay += n_l_bss + tx;
                     currentQueueSize++;
                     packetEnteredQueue++;
                     break;
@@ -163,14 +162,12 @@ public class Assignment1 {
                 }
 
                 case 2: {
-//                    System.out.println("case 2");
                     double bss = linkHashMap.get(switchHashMap.get(source.getSwitchId()).getLinkId()).getBandwidth();
                     double l_bss = (double) packetHashMap.get(event.getPacketId()).getPacketLength() / bss;
 
                     packet.setDeletiontimestamp(event.getTimestamp() + l_bss);
 
                     currentQueueSize--;
-                    packetLeftQueue++;
                     lastOut = true;
                     lastOutTime = event.getTimestamp();
 
@@ -182,7 +179,6 @@ public class Assignment1 {
                 }
 
                 case 3: {
-                    // TODO: 1/20/18
                     packetReachedSink++;
 
                     if (packetReachedSink == 1000)
@@ -198,18 +194,14 @@ public class Assignment1 {
 
         }
 
-        double averageDelay = (totalDelay/packetEnteredQueue);
-        totalDelay += packetLength*(1.0/bs +1.0/bandwidth);
-//        int count = 0;
-
+        double averageDelay = (totalDelay / packetEnteredQueue);
+        averageDelay += packetLength * (1.0 / bs + 1.0 / bandwidth);
 
         String data = "";
         if (sizeLimit)
-            data = ((double)packetLoss / packetReachedQueue) + " " + (sourceNum * 0.5 * packetLength / bandwidth);
+            data = ((double) packetLoss / packetReachedQueue) + " " + (sourceNum * 0.5 * packetLength / bandwidth);
         else
             data = averageDelay + " " + (sourceNum * 0.5 * packetLength / bandwidth);
-
-//        System.out.println(averageDelay + " " + totalDelay +" " + packetEnteredQueue + " " +packetReachedQueue + " " + (sourceNum * 0.5 * packetLength / bandwidth));
 
         String filename = "";
         if (sizeLimit)
@@ -221,11 +213,8 @@ public class Assignment1 {
              BufferedWriter bw = new BufferedWriter(fw);
              PrintWriter out = new PrintWriter(bw)) {
             out.println(data);
-            //more code
-//                out.println("more text");
-            //more code
         } catch (IOException e) {
-            //exception handling left as an exercise for the reader
+            e.printStackTrace();
         }
 
     }

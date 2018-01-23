@@ -3,7 +3,7 @@ import java.util.PriorityQueue;
 public class Switch {
 
     private int switchId;
-    private PriorityQueue<Event> eventPriorityQueue = new PriorityQueue<>();
+    private PriorityQueue<Event> eventPriorityQueue;
     private int linkId;
 
     Switch(int switchId, PriorityQueue<Event> eventPriorityQueue, int linkId) {
