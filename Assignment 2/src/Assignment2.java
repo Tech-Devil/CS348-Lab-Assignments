@@ -1,9 +1,7 @@
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Scanner;
 import java.util.concurrent.ThreadLocalRandom;
@@ -22,16 +20,12 @@ public class Assignment2 {
         System.out.print("Enter the packet Length : ");
         int packetLength = sc.nextInt();
 
-        try {
-            new FileWriter("graph1.txt", false);
-            new FileWriter("graph2.txt", false);
-            new FileWriter("graph3.txt", false);
-            new FileWriter("graph4.txt", false);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
         double tmp[] = new double[sourceNum];
+        StringBuilder data1 = new StringBuilder();
+        StringBuilder data2 = new StringBuilder();
+        StringBuilder data3 = new StringBuilder();
+        StringBuilder data4 = new StringBuilder();
+
         for (double i = 0.1; i < 5; i += 0.05) {
 
             double sumDelay = 0, sumQueueSize = 0;
@@ -47,28 +41,21 @@ public class Assignment2 {
 
             }
 
-            String data1 = (sumDelay / 50) + " " + i;
-
-            try (FileWriter fw = new FileWriter("graph1.txt", true);
-                 BufferedWriter bw = new BufferedWriter(fw);
-                 PrintWriter out = new PrintWriter(bw)) {
-                out.println(data1);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            String data2 = (sumQueueSize / 50) + " " + i;
-
-            try (FileWriter fw = new FileWriter("graph2.txt", true);
-                 BufferedWriter bw = new BufferedWriter(fw);
-                 PrintWriter out = new PrintWriter(bw)) {
-                out.println(data2);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            data1.append(sumDelay / 50).append(" ").append(i).append("\n");
+            data2.append(sumQueueSize / 50).append(" ").append(i).append("\n");
 
         }
 
+
+        for (int k = 0; k < sourceNum; k++) {
+            if (k == sourceNum - 1) {
+                data3.append("source").append(k).append("\n");
+                data4.append("source").append(k).append("\n");
+            } else {
+                data3.append("source").append(k).append(" ");
+                data4.append("source").append(k).append(" ");
+            }
+        }
 
         for (int i = 0; i < 50; i++) {
             for (int j = 0; j < sourceNum; j++) {
@@ -82,43 +69,27 @@ public class Assignment2 {
             }
             calc(sourceNum, lambdas, packetLength, false, true, true, avgDelaySources, avgPacketDrop);
 
-            StringBuilder data = new StringBuilder();
 
             for (int k = 0; k < sourceNum; k++) {
-                data.append(avgDelaySources[k]).append(" ");
+                if (k == sourceNum - 1)
+                    data3.append(avgDelaySources[k]).append("\n");
+                else
+                    data3.append(avgDelaySources[k]).append(" ");
             }
 
-            try (FileWriter fw = new FileWriter("graph3.txt", true);
-                 BufferedWriter bw = new BufferedWriter(fw);
-                 PrintWriter out = new PrintWriter(bw)) {
-                out.println(data);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            StringBuilder data2 = new StringBuilder();
 
             for (int k = 0; k < sourceNum; k++) {
-                data2.append(avgPacketDrop[k]).append(" ");
+                if (k == sourceNum - 1)
+                    data4.append(avgPacketDrop[k]).append("\n");
+                else
+                    data4.append(avgPacketDrop[k]).append(" ");
             }
-
-            try (FileWriter fw = new FileWriter("graph4.txt", true);
-                 BufferedWriter bw = new BufferedWriter(fw);
-                 PrintWriter out = new PrintWriter(bw)) {
-                out.println(data2);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-
         }
 
-//        String[] cmdScript = new String[]{"/bin/bash", "gnuplot.sh"};
-//        try {
-//            Runtime.getRuntime().exec(cmdScript);
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
+        printToFile("graph1.txt", data1.toString());
+        printToFile("graph2.txt", data2.toString());
+        printToFile("graph3.txt", data3.toString());
+        printToFile("graph4.txt", data4.toString());
 
 
         try {
@@ -316,6 +287,20 @@ public class Assignment2 {
             return averageQueueSize;
         else
             return 0;
+
+    }
+
+
+    private static void printToFile(String filename, String data) {
+
+        try (FileWriter fw = new FileWriter(filename, false)) {
+            BufferedWriter bw = new BufferedWriter(fw);
+            bw.write(data);
+            bw.close();
+            fw.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
     }
 

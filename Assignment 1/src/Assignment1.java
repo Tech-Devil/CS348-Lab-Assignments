@@ -19,29 +19,20 @@ public class Assignment1 {
         System.out.print("Enter the packet Length : ");
         int packetLength = sc.nextInt();
 
-        try {
-            new FileWriter("graph1.txt", false);
-            new FileWriter("graph2.txt", false);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        StringBuilder data1 = new StringBuilder();
+        StringBuilder data2 = new StringBuilder();
 
         for (float i = 5; i < 1000; i += 0.1) {
-            calc(i, sourceNum, packetLength, false);
+            data1.append(calc(i, sourceNum, packetLength, false));
         }
 
 
         for (float i = 5; i < 1000; i += 0.1) {
-            calc(i, sourceNum, packetLength, true);
+            data2.append(calc(i, sourceNum, packetLength, true));
         }
 
-//        String[] cmdScript = new String[]{"/bin/bash", "gnuplot.sh"};
-//        try {
-//            Runtime.getRuntime().exec(cmdScript);
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-
+        printToFile("graph1.txt", data1.toString());
+        printToFile("graph2.txt", data2.toString());
 
         try {
             Runtime.getRuntime().exec("python3 Assignment1.py");
@@ -52,7 +43,7 @@ public class Assignment1 {
 
     }
 
-    private static void calc(double bandwidth, int sourceNum, int packetLength, boolean sizeLimit) {
+    private static String calc(double bandwidth, int sourceNum, int packetLength, boolean sizeLimit) {
 
         boolean lastOut = false;
         double lastOutTime = 0;
@@ -197,22 +188,20 @@ public class Assignment1 {
         double averageDelay = (totalDelay / packetEnteredQueue);
         averageDelay += packetLength * (1.0 / bs + 1.0 / bandwidth);
 
-        String data = "";
         if (sizeLimit)
-            data = ((double) packetLoss / packetReachedQueue) + " " + (sourceNum * 0.5 * packetLength / bandwidth);
+            return ((double) packetLoss / packetReachedQueue) + " " + (sourceNum * 0.5 * packetLength / bandwidth)+"\n";
         else
-            data = averageDelay + " " + (sourceNum * 0.5 * packetLength / bandwidth);
+            return averageDelay + " " + (sourceNum * 0.5 * packetLength / bandwidth)+"\n";
 
-        String filename = "";
-        if (sizeLimit)
-            filename = "graph2.txt";
-        else
-            filename = "graph1.txt";
+    }
 
-        try (FileWriter fw = new FileWriter(filename, true);
-             BufferedWriter bw = new BufferedWriter(fw);
-             PrintWriter out = new PrintWriter(bw)) {
-            out.println(data);
+    private static void printToFile(String filename, String data) {
+
+        try (FileWriter fw = new FileWriter(filename, false)) {
+            BufferedWriter bw = new BufferedWriter(fw);
+            bw.write(data);
+            bw.close();
+            fw.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
