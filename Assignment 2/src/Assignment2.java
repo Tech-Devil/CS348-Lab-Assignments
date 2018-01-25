@@ -41,8 +41,8 @@ public class Assignment2 {
 
             }
 
-            data1.append(sumDelay / 50).append(" ").append(i).append("\n");
-            data2.append(sumQueueSize / 50).append(" ").append(i).append("\n");
+            data1.append(sumDelay / 100).append(" ").append(i).append("\n");
+            data2.append(sumQueueSize / 100).append(" ").append(i).append("\n");
 
         }
 
@@ -57,15 +57,15 @@ public class Assignment2 {
             }
         }
 
-        for (int i = 0; i < 50; i++) {
+        for (int i = 0; i < 100; i++) {
             for (int j = 0; j < sourceNum; j++) {
-                lambdas[j] = 0.5 + j * 0.1;
+                lambdas[j] = 0.1 + j * 0.5;
             }
             double avgDelaySources[] = new double[sourceNum];
             double avgPacketDrop[] = new double[sourceNum];
             calc(sourceNum, lambdas, packetLength, false, true, false, avgDelaySources, avgPacketDrop);
             for (int j = 0; j < sourceNum; j++) {
-                lambdas[j] = 0.1 + j * 2;
+                lambdas[j] = 0.5 + j;
             }
             calc(sourceNum, lambdas, packetLength, false, true, true, avgDelaySources, avgPacketDrop);
 
@@ -85,6 +85,7 @@ public class Assignment2 {
                     data4.append(avgPacketDrop[k]).append(" ");
             }
         }
+
 
         printToFile("graph1.txt", data1.toString());
         printToFile("graph2.txt", data2.toString());
@@ -150,6 +151,7 @@ public class Assignment2 {
                 sourceHashMap.put(sourceId, new Source(sourceId, lambdas[0], 11, 1001));
             }
             packetHashMap.put(packet_Id, new Packet(packet_Id, packetLength, randomNum, sourceId++, 0));
+
             eventPriorityQueue.add(new Event(0, randomNum, packet_Id++));
 
         }
@@ -171,11 +173,13 @@ public class Assignment2 {
                         random -= 0.01;
                     double t = -Math.log(1 - random) / source.getPacketGenerationRate();
 
+
                     // Creating new packet
                     packetHashMap.put(packet_Id,
                             source.generatePacket(packet_Id,
                                     packet.getPacketLength(),
                                     packet.getCreationTimestamp() + t));
+
 
                     // Creating event E0
                     eventPriorityQueue.add(
@@ -270,11 +274,7 @@ public class Assignment2 {
 
         double averageQueueSize = (sumQueueSize / packetEnteredQueue);
 
-        if (diffLambda && pktLoss) {
-            for (int i = 0; i < sourceNum; i++) {
-                avgPacketDrop[i] = (avgPacketDrop[i] / qReached[i]);
-            }
-        } else if (diffLambda && !pktLoss) {
+        if (diffLambda && !pktLoss) {
             for (int i = 0; i < sourceNum; i++) {
                 avgDelaySources[i] = (avgDelaySources[i] / qEntered[i]);
                 avgDelaySources[i] += packetLength * (1.0 / bs + 1.0 / bssT);

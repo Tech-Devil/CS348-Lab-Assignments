@@ -1,7 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-
 # Graph-1
 df = pd.read_csv("graph1.txt", sep=' ')
 df.columns = ['y', 'x']
@@ -12,7 +11,7 @@ plt.xlabel("λ")
 plt.ylabel("Average delay")
 plt.show()
 
-# Graph-2
+# Graph-1
 df = pd.read_csv("graph2.txt", sep=' ')
 df.columns = ['y', 'x']
 y = df['y'].tolist()
